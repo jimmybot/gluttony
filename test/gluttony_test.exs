@@ -9,8 +9,9 @@ defmodule GluttonyTest do
     xml2 = File.read!("test/fixtures/other/atom1_the_next_web.rss")
     xml3 = File.read!("test/fixtures/other/rss2_jovem_nerd.rss")
     xml4 = File.read!("test/fixtures/other/rss2_techcrunch.rss")
+    xml5 = File.read!("test/fixtures/other/rss2_njmonitor.rss")
 
-    {:ok, [xml1: xml1, xml2: xml2, xml3: xml3, xml4: xml4]}
+    {:ok, [xml1: xml1, xml2: xml2, xml3: xml3, xml4: xml4, xml5: xml5]}
   end
 
   describe "atom 1.0" do
@@ -37,7 +38,20 @@ defmodule GluttonyTest do
     test "TechCrunch", %{xml4: xml} do
       assert {:ok, %{feed: feed, entries: entries}} = Gluttony.parse_string(xml)
       assert feed.title == "TechCrunch"
+      # dc:creator element test, agnostic to item list order, either first and last items' authors can match
+      assert List.first(entries).author in ["Amanda Siberling", "Sarah Perez"]
       assert Enum.count(entries) == 20
+    end
+
+    test "NJ Monitor (Ghost)", %{xml5: xml} do
+      assert {:ok, %{feed: feed, entries: entries}} = Gluttony.parse_string(xml)
+      assert feed.title == "New Jersey Monitor"
+      assert Enum.count(entries) == 100
+
+      # content:encoded element test, should be full text much longer than the item description
+      entry = List.first(entries)
+      assert String.length(entry.content) > 1000
+      assert String.length(entry.content) > String.length(entry.description)
     end
   end
 
